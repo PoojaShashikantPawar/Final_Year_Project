@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Multilingual Resource Translation System - Extract English resource text using OCR and translate to Indian regional languages.">
+    <title>{% block title %}Multilingual Resource Translation{% endblock %}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Style Sheets -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-logo">
+                    <i data-lucide="languages" class="logo-icon"></i>
+                </div>
+                <div class="brand-name">
+                    <h1>MRTS AI</h1>
+                    <span>Resource Translator</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <a href="{{ url_for('dashboard') }}" class="menu-item {% if request.path == '/' %}active{% endif %}" id="nav-dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('translator_workspace') }}" class="menu-item {% if request.path == '/translator' %}active{% endif %}" id="nav-translator">
+                    <i data-lucide="scan-line"></i>
+                    <span>OCR Workspace</span>
+                </a>
+                <a href="{{ url_for('history_log') }}" class="menu-item {% if request.path == '/history' %}active{% endif %}" id="nav-history">
+                    <i data-lucide="history"></i>
+                    <span>Translation Logs</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="system-badge">
+                    <span class="badge-dot pulse"></span>
+                    <span class="badge-text">v1.2.0 Active</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-panel">
+            <!-- Header/Topbar -->
+            <header class="topbar">
+                <div class="page-title-area">
+                    <h2 class="section-title">{% block section_title %}Overview{% endblock %}</h2>
+                </div>
+                
+                <div class="status-widgets">
+                    <!-- Tesseract Status -->
+                    <div class="status-widget" title="Tesseract OCR Status">
+                        <i data-lucide="cpu" class="status-icon"></i>
+                        <div class="status-info">
+                            <span class="status-label">OCR System</span>
+                            <span class="status-value text-indigo">Active</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Neural Engine Status -->
+                    <div class="status-widget" title="Translation Deep Learning Model">
+                        <i data-lucide="brain-circuit" class="status-icon"></i>
+                        <div class="status-info">
+                            <span class="status-label">Neural Engine</span>
+                            <span class="status-value text-amber">NMT Core</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Inner Page Content -->
+            <section class="content-body">
+                {% block content %}{% endblock %}
+            </section>
+            
+            <footer class="app-footer">
+                <p>&copy; 2026 Multilingual Resource Translation System. AI-Powered Educational Accessibility Project.</p>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Lucide Icons Library -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

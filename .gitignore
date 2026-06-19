@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases
+translation_system.db
+test_translation_system.db
+
+# User uploads and preprocessed cache
+static/uploads/*
+!static/uploads/placeholder.txt
+
+# OS generated
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store

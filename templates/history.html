@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Translation History Logs - Multilingual Resource Translation System{% endblock %}
+{% block section_title %}Translation History Logs{% endblock %}
+
+{% block content %}
+<div class="history-page-header glass-card">
+    <div class="search-bar-wrapper">
+        <i data-lucide="search" class="search-icon"></i>
+        <input type="text" id="log-search-input" placeholder="Search by document name, translation language, or translation model..." oninput="filterLogs()">
+    </div>
+</div>
+
+<div class="history-grid" id="history-grid">
+    {% if records %}
+        {% for record in records %}
+        <div class="history-card glass-card" data-id="{{ record.id }}" data-search-target="{{ record.filename or '' }} {{ record.target_lang }} {{ record.model_used }} {{ record.original_text }} {{ record.translated_text }}">
+            <!-- Card Header -->
+            <div class="card-header">
+                <div class="card-info">
+                    <div class="doc-title-row">
+                        <i data-lucide="file" class="doc-icon text-indigo"></i>
+                        <h4 class="doc-name" title="{{ record.filename or 'Raw Text Input' }}">
+                            {{ record.filename or 'Raw Text Input' }}
+                        </h4>
+                    </div>
+                    <span class="doc-date"><i data-lucide="clock" class="inline-icon"></i> {{ record.translated_at }}</span>
+                </div>
+                <div class="card-badges">
+                    <span class="badge badge-amber">{{ record.target_lang }}</span>
+                    {% if record.accuracy_score %}
+                    <span class="badge badge-indigo" title="OCR confidence accuracy score">OCR: {{ record.accuracy_score }}%</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Card Content Body -->
+            <div class="card-content-body">
+                <div class="split-pane">
+                    <div class="pane-box">
+                        <span class="pane-label">Original Text (English)</span>
+                        <div class="pane-content">{{ record.original_text }}</div>
+                    </div>
+                    <div class="pane-box">
+                        <span class="pane-label">Translated Text ({{ record.target_lang }})</span>
+                        <div class="pane-content">{{ record.translated_text }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card Footer -->
+            <div class="card-footer">
+                <div class="card-meta">
+                    <i data-lucide="cpu" class="meta-icon"></i>
+                    <span class="meta-text" title="{{ record.model_used }}">{{ record.model_used }}</span>
+                </div>
+                <div class="card-actions">
+                    <a href="{{ url_for('download_record', record_id=record.id, fmt='txt') }}" class="btn btn-sm btn-outline text-indigo" title="Download TXT">
+                        <i data-lucide="download"></i> TXT
+                    </a>
+                    <a href="{{ url_for('download_record', record_id=record.id, fmt='json') }}" class="btn btn-sm btn-outline text-amber" title="Download JSON">
+                        <i data-lucide="file-json"></i> JSON
+                    </a>
+                    <button onclick="confirmDeleteRecord({{ record.id }})" class="btn btn-sm btn-outline text-rose btn-delete" title="Delete Log">
+                        <i data-lucide="trash-2"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-history glass-card">
+            <i data-lucide="history" class="empty-icon text-muted"></i>
+            <h3>No Records Found</h3>
+            <p>You haven't translated any documents yet. Upload a document or enter text in the OCR Workspace to create records.</p>
+            <a href="{{ url_for('translator_workspace') }}" class="btn btn-primary mt-3">
+                <i data-lucide="scan-line"></i> Go to OCR Workspace
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Simple Confirmation Modal -->
+<div class="modal-overlay hidden" id="delete-modal">
+    <div class="modal-box glass-card">
+        <i data-lucide="alert-triangle" class="modal-icon text-rose animate-bounce"></i>
+        <h3>Delete Translation Log?</h3>
+        <p>This action will permanently delete this translation log and its associated OCR extraction data from the database. This action cannot be undone.</p>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeDeleteModal()">Cancel</button>
+            <button class="btn btn-primary bg-rose text-white" id="confirm-delete-btn" onclick="executeDeleteRecord()">Delete Record</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

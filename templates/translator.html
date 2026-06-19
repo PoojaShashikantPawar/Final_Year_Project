@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block title %}OCR Workspace - Multilingual Resource Translation System{% endblock %}
+{% block section_title %}Resource Translation Workspace{% endblock %}
+
+{% block content %}
+<div class="workspace-grid">
+    <!-- INPUT COLUMN -->
+    <div class="workspace-col input-panel glass-card">
+        <!-- Input Tabs Header -->
+        <div class="tab-header">
+            <button class="tab-btn active" id="tab-file-btn" onclick="switchInputTab('file')">
+                <i data-lucide="file-image"></i> Document OCR
+            </button>
+            <button class="tab-btn" id="tab-text-btn" onclick="switchInputTab('text')">
+                <i data-lucide="type"></i> Raw Text Input
+            </button>
+        </div>
+
+        <form id="translation-form" enctype="multipart/form-data">
+            <input type="hidden" name="mode" id="process-mode" value="ocr">
+            
+            <!-- File Upload Tab Content -->
+            <div id="tab-file-content" class="tab-content active">
+                <div class="drag-drop-zone" id="drop-zone">
+                    <i data-lucide="cloud-upload" class="upload-icon"></i>
+                    <p class="upload-primary-text">Drag & drop files here or click to browse</p>
+                    <p class="upload-secondary-text">Supports PNG, JPG, JPEG, BMP (Max 16MB)</p>
+                    <input type="file" name="file" id="file-input" class="hidden-file-input" accept="image/*">
+                </div>
+                
+                <!-- Image Preview Area -->
+                <div id="image-preview-container" class="image-preview-container hidden">
+                    <div class="preview-header">
+                        <h5>Selected Material</h5>
+                        <button type="button" class="btn-clear text-rose" onclick="clearSelectedFile()">
+                            <i data-lucide="x"></i> Remove
+                        </button>
+                    </div>
+                    <img id="image-preview" src="#" alt="Upload Preview">
+                </div>
+                
+                <!-- OCR Preprocessing Controls -->
+                <div class="preprocessing-controls">
+                    <h5 class="controls-title">
+                        <i data-lucide="sliders"></i> OpenCV Preprocessing (Noise Reduction)
+                    </h5>
+                    
+                    <div class="toggle-control">
+                        <div class="toggle-desc">
+                            <span class="toggle-label">Bilateral Noise Filtering</span>
+                            <span class="toggle-sub">Reduces speckle noise & text bleed</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" name="denoise" value="true" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle-control">
+                        <div class="toggle-desc">
+                            <span class="toggle-label">Adaptive Binarization (Threshold)</span>
+                            <span class="toggle-sub">Converts to black & white for Tesseract</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" name="threshold" value="true" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle-control">
+                        <div class="toggle-desc">
+                            <span class="toggle-label">Contrast Enhancement (CLAHE)</span>
+                            <span class="toggle-sub">Normalizes lighting across document pages</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" name="contrast" value="true" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Raw Text Tab Content -->
+            <div id="tab-text-content" class="tab-content">
+                <div class="text-input-container">
+                    <label for="original_text_input" class="field-label">Original English Text</label>
+                    <textarea name="original_text" id="original_text_input" placeholder="Type or paste English resource content here..."></textarea>
+                </div>
+            </div>
+            
+            <!-- Global Options (Always Visible) -->
+            <div class="global-translation-options">
+                <h5 class="controls-title">
+                    <i data-lucide="languages"></i> Translation Options
+                </h5>
+                
+                <div class="form-group">
+                    <label for="target_lang" class="field-label">Target Indian Regional Language</label>
+                    <div class="select-wrapper">
+                        <select name="target_lang" id="target_lang" class="form-select">
+                            {% for code, name in languages.items() %}
+                            <option value="{{ code }}" {% if code == 'hi' %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="toggle-control">
+                    <div class="toggle-desc">
+                        <span class="toggle-label">Neural Machine API Fallback</span>
+                        <span class="toggle-sub">Skips large transformer downloads</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" name="force_fallback" value="true" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="submit-btn">
+                <i data-lucide="zap"></i> Process & Translate
+            </button>
+        </form>
+    </div>
+
+    <!-- OUTPUT COLUMN -->
+    <div class="workspace-col output-panel glass-card">
+        <!-- Dual Output Layout -->
+        <div class="output-split">
+            <!-- OCR Extracted Panel -->
+            <div class="output-box flex-col">
+                <div class="output-box-header">
+                    <h5>
+                        <i data-lucide="search-code" class="text-indigo"></i> Extracted Source
+                    </h5>
+                    <div class="badge-row">
+                        <span class="badge badge-indigo hidden" id="accuracy-badge">Accuracy: 92%</span>
+                        <span class="badge badge-secondary" id="engine-type">Source text</span>
+                    </div>
+                </div>
+                
+                <div class="output-textarea-wrapper">
+                    <!-- Read-only or Editable English Output -->
+                    <textarea id="extracted-text-output" placeholder="Extracted text will appear here. You can manually edit it if required." readonly></textarea>
+                </div>
+                
+                <!-- Preprocessing Tensors Stats Box -->
+                <div class="tensor-stats-box hidden" id="tensor-stats">
+                    <h6>
+                        <i data-lucide="terminal"></i> Model Input Matrix (Tensor Preparation)
+                    </h6>
+                    <div class="tensor-console">
+                        <div><span class="c-lbl">Vocab Token IDs (First 10):</span> <span id="t-ids" class="c-val">[]</span></div>
+                        <div><span class="c-lbl">Tensor Vector Dim:</span> <span id="t-dim" class="c-val">[1, 50]</span></div>
+                        <div><span class="c-lbl">Padded NumPy Array:</span> <span id="t-pad" class="c-val">[]</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Divider -->
+            <hr class="pane-divider">
+            
+            <!-- Translated Panel -->
+            <div class="output-box flex-col">
+                <div class="output-box-header">
+                    <h5>
+                        <i data-lucide="arrow-right-left" class="text-amber"></i> Translated Output
+                    </h5>
+                    <div class="badge-row">
+                        <span class="badge badge-amber" id="target-language-badge">Target: Hindi</span>
+                    </div>
+                </div>
+                
+                <div class="output-textarea-wrapper">
+                    <div class="translated-text-display" id="translated-text-output" placeholder="Translated text will appear here.">
+                        <!-- Output text rendered here -->
+                    </div>
+                </div>
+                
+                <!-- Action Row -->
+                <div class="output-actions">
+                    <button class="btn btn-outline" id="btn-copy" onclick="copyTranslation()" disabled>
+                        <i data-lucide="copy"></i> Copy
+                    </button>
+                    <button class="btn btn-outline" id="btn-tts" onclick="speakTranslation()" disabled>
+                        <i data-lucide="volume-2"></i> Listen
+                    </button>
+                    
+                    <div class="dropdown-download">
+                        <button class="btn btn-outline" id="btn-download" onclick="toggleDownloadDropdown()" disabled>
+                            <i data-lucide="download"></i> Download <i data-lucide="chevron-down" class="chevron"></i>
+                        </button>
+                        <div class="download-dropdown-content" id="download-dropdown">
+                            <button onclick="downloadAs('txt')">TXT File</button>
+                            <button onclick="downloadAs('json')">JSON Data</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay hidden" id="loading-overlay">
+    <div class="loading-content glass-card">
+        <div class="loading-spinner"></div>
+        <h4 id="loading-status">Preprocessing image...</h4>
+        <p class="loading-sub" id="loading-log">Executing NumPy array padding</p>
+    </div>
+</div>
+{% endblock %}
