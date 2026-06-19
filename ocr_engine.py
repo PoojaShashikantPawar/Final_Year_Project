@@ -119,7 +119,13 @@ def extract_text(image_path, denoise=True, threshold=True, contrast=True):
     Main OCR extraction function. Uses Tesseract if available, else falls back to mock database.
     """
     # Create the preprocessed image first
-    processed_filename, processed_path = preprocess_image(image_path, denoise, threshold, contrast)
+    try:
+        processed_filename, processed_path = preprocess_image(image_path, denoise, threshold, contrast)
+    except Exception as e:
+        processed_filename = "processed_" + os.path.basename(image_path)
+        processed_path = image_path
+        if TESSERACT_AVAILABLE:
+            raise e
     
     if TESSERACT_AVAILABLE:
         try:
